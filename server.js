@@ -1,7 +1,14 @@
 const express = require('express');
 const app = express();
 
-const carApi = require('./node-car-api');
+const {getBrands} = require('node-car-api');
+const {getModels} = require('node-car-api');
+
+var elasticsearch = require('elasticsearch');
+
+var client = new elasticsearch.Client({
+    host: 'localhost:9200'
+})
 
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -10,8 +17,28 @@ app.use(function(req, res, next) {
 });
 
 app.get('/populate', function (req, res) {
-    carApi.getModelsForAllBrands(function (models) {
-        res.send(models);
+
+    async function getApiBrands() {
+        const brands = await getBrands();
+        return brands;
+    }
+
+    getApiBrands().then(brands => {
+        brands.forEach(async brand => {
+            const models = await getModels(brand)
+            models.forEach(model => {
+                client.create({
+                    index: 'caradisiac',
+                    type: 'model',
+                    id: model.uuid,
+                    body: model
+                }, function (error, response) {
+                    if(error) {
+                        console.log(error);
+                    }
+                })
+            })
+        })
     })
 })
 
