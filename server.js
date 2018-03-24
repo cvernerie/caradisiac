@@ -46,16 +46,22 @@ app.get('/populate', function (req, res) {
     })
 })
 
-app.get('/suv', function (req, res) {
+app.get('/suv/:size/:offset', function (req, res) {
     var results = []
     client.search({
         index: 'caradisiac',
         type: 'model',
         body: {
-            size: 60,
+            size: req.params.size,
+            offset: req.params.offset,
             query: {
                 match_all: {},
             },
+            sort: {
+                "volume.keyword": {
+                    order: "desc"
+                }
+            }
         }
     }).then(res => {
         res.hits.hits.forEach(model => {
