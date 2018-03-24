@@ -23,6 +23,8 @@ app.get('/populate', function (req, res) {
         return brands;
     }
 
+    console.log("Indexing models from node-car-api in ES index...")
+
     getApiBrands().then(brands => {
         brands.forEach(async brand => {
             const models = await getModels(brand)
@@ -39,9 +41,33 @@ app.get('/populate', function (req, res) {
                 })
             })
         })
+    }).catch(error => {
+        console.log(error)
     })
 })
 
-app.listen(6969, function () {
-    console.log('Express server is listening on port 6969!')
+app.get('/suv', function (req, res) {
+    var results = []
+    client.search({
+        index: 'caradisiac',
+        type: 'model',
+        body: {
+            size: 60,
+            query: {
+                match_all: {},
+            },
+        }
+    }).then(res => {
+        res.hits.hits.forEach(model => {
+            results.push(model['_source']);
+        });
+    }, err => {
+        console.log(err.message);
+    }).then(() => {
+        res.json(results);
+    });
+})
+
+app.listen(9292, function () {
+    console.log('Express server is listening on port 9292!')
 });
